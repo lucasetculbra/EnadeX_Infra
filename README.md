@@ -59,7 +59,8 @@ Publicar uma imagem não muda o site. A VPS só troca de versão quando o projet
 
 ## Desempenho
 
-- **Cache dos `GET /api/*` na borda** (em memória): 10 min de validade. Durante a atualização, a borda continua
+- **Cache dos `GET /api/*` na borda** (em memória): 7 dias de validade, porque os dados só mudam quando o projeto é
+  reiniciado, e reiniciar limpa o cache. Durante a atualização, a borda continua
   servindo a cópia anterior (`stale-while-revalidate`), e só uma requisição por rota vai até a API
   (`proxy_cache_lock`). O cabeçalho `X-Cache` mostra `HIT`, `MISS`, `STALE` ou `UPDATING`.
 - **API em um processo**, com as bases em memória e aquecimento automático a cada partida: o primeiro visitante já

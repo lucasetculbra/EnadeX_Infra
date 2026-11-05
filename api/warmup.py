@@ -1,12 +1,16 @@
 """Aquecimento da API única do EnadeX logo depois que ela sobe.
 
 1. Espera o /api/health responder.
-2. Chama, direto na API, as rotas que carregam bases para a memória: EduCluster (~490 mil linhas, ~60 s a frio),
-   E-XplainENADE (13 tabelas) e as listas fixas do ENADE-Time e do MultiENADE. Assim nenhum visitante paga a
-   carga a frio.
-3. Repete as mesmas rotas pelo `edge` (nginx) para deixar as respostas no cache de borda.
+2. Carrega as bases para a memória com rotas baratas, chamadas direto na API e em série: EduCluster (arq3 + arq4,
+   ~490 mil linhas cada, ~110 s a frio), E-XplainENADE (13 tabelas) e o pool do leitor do ENADE-Time.
+3. Chama cada rota da lista UMA vez pela borda (nginx). Ela calcula a resposta, e a borda a guarda no cache.
 
-Erros só vão para o log; o aquecimento nunca derruba a API. Para trocar a lista: WARMUP_PATHS (separada por espaço).
+Cada rota pesada é calculada uma vez só. Em 05/11/2026, a versão anterior chamava tudo direto e depois pela borda: o
+segundo cálculo dos clusters de estudantes, sobre a memória já fragmentada, estourava o limite do container.
+Se a borda não responder, a rota é chamada direto na API.
+
+Erros só vão para o log; o aquecimento nunca derruba a API. Para trocar a lista da etapa 3: WARMUP_PATHS (separada
+por espaço).
 """
 import os
 import sys
@@ -17,8 +21,15 @@ import urllib.request
 BASE = os.getenv("WARMUP_BASE", "http://127.0.0.1:8000")
 EDGE = os.getenv("WARMUP_EDGE", "http://edge:8080")
 
+# Etapa 2: rotas leves que forçam a carga das bases (o cálculo em si é desprezível).
+CARGA = [
+    "/api/educluster/areas",
+    "/api/e-xplainenade/dataset/resumo",
+    "/api/enade-time/dim/anos",
+]
+
+# Etapa 3: o que as páginas pedem ao abrir.
 PADRAO = [
-    # EduCluster primeiro: é a carga mais pesada e destrava várias páginas.
     "/api/educluster/cursos",
     "/api/educluster/cursos/clusters",
     "/api/educluster/estudantes/clusters",
@@ -28,15 +39,12 @@ PADRAO = [
     "/api/educluster/areas",
     "/api/educluster/dimensoes",
     "/api/educluster/espacos-desempenho",
-    # E-XplainENADE.
     "/api/e-xplainenade/opcoes",
     "/api/e-xplainenade/dataset/resumo",
-    # MultiENADE.
     "/api/multienade/relatorio-regressao",
     "/api/multienade/relatorio-cluster",
     "/api/multienade/relatorio-associacao",
     "/api/multienade/relatorio-shap",
-    # ENADE-Time.
     "/api/enade-time/dim/regioes",
     "/api/enade-time/dim/ufs",
     "/api/enade-time/dim/anos",
@@ -85,15 +93,18 @@ def main() -> None:
     if not esperar_saude():
         log("a API não respondeu ao /api/health em 180 s; aquecimento cancelado")
         return
-    caminhos = os.getenv("WARMUP_PATHS", "").split() or PADRAO
     inicio = time.monotonic()
-    for caminho in caminhos:
-        status, segundos = get(f"{BASE}{caminho}", timeout=240)
-        log(f"{status} {segundos:6.1f}s {caminho}")
-    log(f"memória da API aquecida em {time.monotonic() - inicio:.0f}s")
-    for caminho in caminhos:
-        get(f"{EDGE}{caminho}", timeout=60)
-    log("cache de borda preenchido")
+    for caminho in CARGA:
+        status, segundos = get(f"{BASE}{caminho}", timeout=300)
+        log(f"base  {status} {segundos:6.1f}s {caminho}")
+    log(f"bases carregadas em {time.monotonic() - inicio:.0f}s")
+
+    for caminho in os.getenv("WARMUP_PATHS", "").split() or PADRAO:
+        status, segundos = get(f"{EDGE}{caminho}", timeout=300)
+        if status == 0:  # borda fora do ar: calcula direto, sem cache
+            status, segundos = get(f"{BASE}{caminho}", timeout=300)
+        log(f"borda {status} {segundos:6.1f}s {caminho}")
+    log(f"aquecimento concluído em {time.monotonic() - inicio:.0f}s (cache de borda preenchido)")
 
 
 if __name__ == "__main__":

@@ -3,13 +3,16 @@
 # Contexto de build: raiz do EnadeX_Infra, com o backend em ./backend (o CI faz o checkout).
 FROM python:3.13-slim
 
+# MALLOC_ARENA_MAX=2: o glibc cria uma arena de memória por thread, e as rotas rodam no threadpool do FastAPI. Com
+# pandas/numpy, isso fragmenta a memória e infla o consumo do processo; duas arenas bastam.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     MPLBACKEND=Agg \
     MPLCONFIGDIR=/tmp/matplotlib \
-    NUMBA_CACHE_DIR=/tmp/numba
+    NUMBA_CACHE_DIR=/tmp/numba \
+    MALLOC_ARENA_MAX=2
 
 # fonts-liberation: o relatório em PDF do E-XplainENADE usa a Liberation Sans (e_xplainenade/packages.txt).
 # libgomp1: OpenMP para scikit-learn e numba. appuser: a API não roda como root.

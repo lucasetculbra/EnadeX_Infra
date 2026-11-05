@@ -99,7 +99,9 @@ services:
       resources:
         limits:
           cpus: "1.50"
-          memory: 3G
+          # Bases em memória ~2 GiB + picos dos cálculos do EduCluster. Com 3G, a API caiu no aquecimento em
+          # 05/11/2026. Com o n8n (~1,1 GB), o pior caso da VPS de 8 GB continua abaixo de 6,5 GB.
+          memory: 4608M
     logging: *log
 
   web:

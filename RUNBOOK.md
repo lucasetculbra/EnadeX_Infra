@@ -135,9 +135,13 @@ públicos e são lidos sem credencial. Se um deles voltar a ser privado, o job c
 ## Caches e dados
 
 - **Borda (nginx, em memória):**
-  - todo `GET /api/*` fica em cache por 10 min; a estabilidade do EduCluster, por 60 min; os `/health`, por 15 s;
+  - todo `GET /api/*` fica em cache por 7 dias; os `/health`, por 15 s;
   - só respostas HTTP 200 entram no cache, e as respostas curtas do MultiENADE (erro com HTTP 200) ficam de fora;
-  - Reiniciar o projeto esvazia o cache.
+  - o cache ocupa no máximo 64 MB; passando disso, sai a entrada menos usada;
+  - se a API cair, a borda continua servindo o que já está em cache;
+  - Reiniciar o projeto esvazia o cache. Por isso a validade é longa: dado republicado = reiniciar.
+- **Pico de memória:** com as bases carregadas, a API ocupa ~2 GiB, e os cálculos do EduCluster somam picos. Com
+  limite de 3 GiB, ela caiu no aquecimento em 05/11/2026. O limite é 4,5 GiB, e o aquecimento calcula cada rota uma vez.
 - **API:** as bases ficam em memória, sem validade por tempo, e são recarregadas a cada partida pelo aquecimento
   (`api/warmup.py`). Dados novos no Supabase aparecem depois de Reiniciar.
 - **Volume `educluster_cache`:** descrições por IA do EduCluster. Sobrevive a deploys. Apagá-lo obriga a gerar tudo de
@@ -155,7 +159,7 @@ públicos e são lidos sem credencial. Se um deles voltar a ser privado, o job c
 
 | Serviço | CPU | Memória | Observação |
 |---|---|---|---|
-| api | 1,5 | 3 GB | `oom_score_adj` 500: em falta de memória, o kernel encerra a API antes do `n8n` |
+| api | 1,5 | 4,5 GB | `oom_score_adj` 500: em falta de memória, o kernel encerra a API antes do `n8n` |
 | web | 0,5 | 512 MB | — |
 | edge | 0,5 | 256 MB | Cache em tmpfs de até 256 MB |
 
