@@ -118,8 +118,10 @@ curl -s -o /dev/null -w 'TTFB %{time_starttransfer}s\n' https://enadex.org/api/e
 
 **Rotação:** cole o valor novo no hPanel, Atualize e verifique as rotas de dados. Só então revogue o antigo.
 
-O CI usa um segredo próprio, `FRONTEND_REPO_TOKEN`: token fine-grained só com *Contents: read* no repositório do
-frontend. Ele expira na data escolhida ao criá-lo; renove antes disso, ou o job `web` falha no checkout.
+O CI lê o repositório privado do frontend com a chave de deploy `FRONTEND_DEPLOY_KEY`. É uma chave SSH só de
+leitura, cadastrada pelo dono do repositório em *Settings → Deploy keys*, e não expira. Sem ela, o CI usa o token
+`FRONTEND_REPO_TOKEN`, que expira na data escolhida ao criá-lo; renove antes disso, ou o job `web` falha no checkout.
+Token fine-grained não serve aqui: o GitHub não o aceita em repositório de outra conta pessoal.
 
 ## Caches e dados
 
