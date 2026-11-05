@@ -11,7 +11,7 @@ on:
         description: Branch, tag ou commit do EnadeX/EnadeX_Backend
         default: main
       frontend_ref:
-        description: Branch, tag ou commit do Cintriano/EnadeX_Frontend
+        description: Branch, tag ou commit do EnadeX/EnadeX_Frontend
         default: master
   repository_dispatch:
     types: [backend-atualizado, frontend-atualizado]
@@ -104,30 +104,14 @@ jobs:
   web:
     name: Frontend (Next.js)
     runs-on: ubuntu-latest
-    env:
-      # O frontend é privado e pertence a uma conta pessoal, onde token fine-grained não alcança. Acesso preferido:
-      # chave de deploy SSH só leitura (FRONTEND_DEPLOY_KEY). Sem ela, o token FRONTEND_REPO_TOKEN.
-      COM_CHAVE_DEPLOY: ${{ secrets.FRONTEND_DEPLOY_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Código do frontend (chave de deploy só leitura)
-        if: env.COM_CHAVE_DEPLOY == 'true'
+      - name: Código do frontend (repositório público da organização, sem credencial)
         uses: actions/checkout@v4
         with:
-          repository: Cintriano/EnadeX_Frontend
+          repository: EnadeX/EnadeX_Frontend
           ref: ${{ github.event.inputs.frontend_ref || 'master' }}
-          ssh-key: ${{ secrets.FRONTEND_DEPLOY_KEY }}
-          persist-credentials: false
-          path: frontend
-
-      - name: Código do frontend (token)
-        if: env.COM_CHAVE_DEPLOY != 'true'
-        uses: actions/checkout@v4
-        with:
-          repository: Cintriano/EnadeX_Frontend
-          ref: ${{ github.event.inputs.frontend_ref || 'master' }}
-          token: ${{ secrets.FRONTEND_REPO_TOKEN }}
           persist-credentials: false
           path: frontend
 

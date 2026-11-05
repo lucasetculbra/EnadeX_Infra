@@ -42,7 +42,7 @@ api ──▶ Supabase do grupo (us-east-2): PostgREST com a chave de serviço; 
 | Imagem | Fonte | Tags |
 |---|---|---|
 | `ghcr.io/lucasetculbra/enadex-api` | `EnadeX/EnadeX_Backend` (`main`) | `main` e o sha de 12 caracteres do backend |
-| `ghcr.io/lucasetculbra/enadex-web` | `Cintriano/EnadeX_Frontend` (`master`; privado, lido com a chave de deploy `FRONTEND_DEPLOY_KEY`, só leitura, ou com o token `FRONTEND_REPO_TOKEN`) | `main` e o sha do frontend |
+| `ghcr.io/lucasetculbra/enadex-web` | `EnadeX/EnadeX_Frontend` (`master`) | `main` e o sha do frontend |
 | `ghcr.io/lucasetculbra/enadex-edge` | este repositório (`edge/`) | `main` e o sha deste repositório |
 
 O CI roda em push na `main` deste repositório, manualmente (Actions → *Imagens do EnadeX* → *Run workflow*, com
