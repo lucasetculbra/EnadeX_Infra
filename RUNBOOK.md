@@ -24,10 +24,10 @@ As operações abaixo citam o nome no hPanel e, entre parênteses, a ferramenta 
 
 | Quero | Como | Tempo |
 |---|---|---|
-| Publicar nova versão do backend ou do frontend | GitHub → `EnadeX_Infra` → Actions → *Imagens do EnadeX* → *Run workflow*. Quando ficar verde, **Atualizar** o projeto `enadex` (`VPS_updateProjectV1`) | CI ~10 min + 1–3 min |
-| Voltar uma versão | Actions → *Promover versão* (imagem + sha anterior), depois **Atualizar** | ~2 min |
-| Mostrar dados republicados no Supabase | **Reiniciar** o projeto (`VPS_restartProjectV1`): a API recarrega as bases e a borda esvazia o cache | 1–3 min |
-| Trocar um segredo | Editar a variável no hPanel e **Atualizar**; só Reiniciar não aplica `.env` novo | 1–3 min |
+| Publicar nova versão do backend ou do frontend | GitHub → `EnadeX_Infra` → Actions → *Imagens do EnadeX* → *Run workflow*. Quando ficar verde, **Atualizar** o projeto `enadex` (`VPS_updateProjectV1`) | CI ~5 min + aquecimento ~4 min |
+| Voltar uma versão | Actions → *Promover versão* (imagem + sha anterior), depois **Atualizar** | ~1 min + aquecimento ~4 min |
+| Mostrar dados republicados no Supabase | **Reiniciar** o projeto (`VPS_restartProjectV1`): a API recarrega as bases e a borda esvazia o cache | aquecimento ~4 min |
+| Trocar um segredo | Editar a variável no hPanel e **Atualizar**; só Reiniciar não aplica `.env` novo | aquecimento ~4 min |
 | Tirar o site do ar | **Parar** o projeto (`VPS_stopProjectV1`); o `n8n` não é afetado | segundos |
 | Ver o que está rodando | `VPS_getProjectContainersV1` (estado e health), `VPS_getProjectLogsV1`, `VPS_getMetricsV1` | — |
 
@@ -43,8 +43,8 @@ Pré-requisitos:
 
 - [ ] Paulo: chave de serviço antiga revogada e `REVOKE` da `truncar_tabela` aplicado (`COMUNICADO_SEGURANCA.md`).
 - [ ] CI verde nas 3 imagens.
-- [ ] Os 3 pacotes do GHCR públicos (pacote → *Package settings* → *Change visibility* → *Public*), para a VPS
-      baixar sem login.
+- [ ] Os 3 pacotes do GHCR públicos, para a VPS baixar sem login. Eles herdam a visibilidade do repositório
+      público; confira com `docker pull` sem login.
 - [ ] Snapshot da VPS (`VPS_createSnapshotV1`). A Hostinger guarda um só, e um novo substitui o anterior.
 - [ ] Linha de base do `n8n`: healthz 200 e containers `Up`.
 
@@ -67,8 +67,11 @@ Passos:
    `deploy/.env.example` (tags `main`, `SUPABASE_URL` com a referência do projeto, segredos vazios).
 3. **Segredos:** o responsável preenche no hPanel; a lista está na seção *Segredos*.
 4. **Atualizar** o projeto: aplica o `.env` e recria os containers.
-5. **Acompanhar** com `VPS_getProjectContainersV1` até os três ficarem `healthy`. A API leva 1–3 min, porque carrega
-   as bases e aquece o cache. Nos logs da `api`, o aquecimento imprime `status tempo rota`.
+5. **Acompanhar** com `VPS_getProjectContainersV1` até os três ficarem `healthy`.
+   - A API fica `healthy` em ~20 s, mas o aquecimento leva cerca de 3,5 min. No teste de 04/11/2026 foram 205 s, dos
+     quais 116 s só para a base do EduCluster.
+   - Até o aquecimento terminar, as rotas do EduCluster demoram; as demais respondem normalmente.
+   - Nos logs da `api`, o aquecimento imprime `status tempo rota` e termina com `cache de borda preenchido`.
 6. **Verificar** (próxima seção) e conferir o `n8n` de novo: healthz 200 e containers `Up`.
 
 ## Verificação
@@ -88,6 +91,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST https://enadex.org/api/multiena
 curl -s -o /dev/null -w '%{http_code}\n' -X POST https://enadex.org/api/e-xplainenade/dataset/refresh
 curl -s -o /dev/null -w '%{http_code}\n' 'https://enadex.org/api/educluster/areas?forcar=true'
 seq 1 120 | xargs -P 60 -I{} curl -s -o /dev/null -w '%{http_code}\n' https://enadex.org/api/health | sort | uniq -c
+# (no Windows o xargs não chega a 20 req/s; rode do Linux/WSL ou com um cliente de threads)
 
 # Tempo até o primeiro byte. Metas: HTML < 200 ms; GET de API em cache < 100 ms
 curl -s -o /dev/null -w 'TTFB %{time_starttransfer}s\n' https://enadex.org/
@@ -164,3 +168,4 @@ Token fine-grained não serve aqui: o GitHub não o aceita em repositório de ou
 | `{"erro": ...}` no MultiENADE ou 500 no EduCluster | Chave de serviço inválida ou revogada | Conferir `SUPABASE_KEY` no hPanel e Atualizar |
 | 429 para visitante legítimo | Limite por IP baixo para o uso real | Ajustar `limit_req` em `edge/nginx.conf`, publicar a borda e Atualizar |
 | Supabase pausado | O plano gratuito pausa após 7 dias sem uso | O Paulo reativa no painel; o tráfego do site evita a pausa |
+| `InconsistentVersionWarning` (StandardScaler, PCA, KMeans) no log da `api` | Modelos do EduCluster salvos com scikit-learn 1.9.0; a imagem usa 1.9.1, a versão dos modelos do MultiENADE | Aviso conhecido, de patch, sem efeito nas rotas (testado em 04/11/2026). Correção: salvar de novo os `.joblib` do EduCluster com 1.9.1 |

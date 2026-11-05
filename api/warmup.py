@@ -56,7 +56,7 @@ def log(msg: str) -> None:
     print(f"[warmup] {msg}", file=sys.stdout, flush=True)
 
 
-def get(url: str, timeout: float) -> tuple[int, float]:
+def get(url: str, timeout: float, silencioso: bool = False) -> tuple[int, float]:
     inicio = time.monotonic()
     try:
         with urllib.request.urlopen(url, timeout=timeout) as resp:
@@ -65,14 +65,16 @@ def get(url: str, timeout: float) -> tuple[int, float]:
     except urllib.error.HTTPError as erro:
         return erro.code, time.monotonic() - inicio
     except Exception as erro:  # noqa: BLE001 (o aquecimento nunca pode derrubar nada)
-        log(f"falha em {url}: {type(erro).__name__}")
+        if not silencioso:
+            log(f"falha em {url}: {type(erro).__name__}")
         return 0, time.monotonic() - inicio
 
 
 def esperar_saude(limite_s: float = 180.0) -> bool:
+    # Enquanto o uvicorn importa os 4 módulos (~20 s), a conexão é recusada: isso não é erro e não vai para o log.
     fim = time.monotonic() + limite_s
     while time.monotonic() < fim:
-        status, _ = get(f"{BASE}/api/health", timeout=3)
+        status, _ = get(f"{BASE}/api/health", timeout=3, silencioso=True)
         if status == 200:
             return True
         time.sleep(2)
