@@ -1,4 +1,4 @@
-# Teste no PC (Docker Desktop), sem o Traefik da VPS: a borda fica em http://localhost:8080.
+# Teste no PC (Docker Desktop), sem o Traefik da VPS: a borda fica em http://localhost:8080 (ou na PORTA_LOCAL).
 #
 #   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.local.yml --env-file deploy/.env up
 #
@@ -7,7 +7,7 @@
 services:
   edge:
     ports:
-      - "8080:8080"
+      - "${PORTA_LOCAL:-8080}:8080"
 
 networks:
   proxy:

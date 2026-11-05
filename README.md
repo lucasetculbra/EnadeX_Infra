@@ -91,4 +91,5 @@ cp deploy/.env.example deploy/.env    # preencher os segredos; o arquivo nunca Ã
 docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.local.yml --env-file deploy/.env up
 ```
 
-O site fica em http://localhost:8080 e a API em http://localhost:8080/api/health.
+O site fica em http://localhost:8080 e a API em http://localhost:8080/api/health. Se a 8080 estiver ocupada, defina
+PORTA_LOCAL (por exemplo, `PORTA_LOCAL=18080`) antes do `docker compose`.
