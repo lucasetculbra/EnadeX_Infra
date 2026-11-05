@@ -5,6 +5,8 @@ name: Imagens do EnadeX
 on:
   push:
     branches: [main]
+    # Documentação e o compose da VPS não entram nas imagens: mudar só eles não gera build.
+    paths-ignore: ['**.md', 'deploy/**']
   workflow_dispatch:
     inputs:
       backend_ref:

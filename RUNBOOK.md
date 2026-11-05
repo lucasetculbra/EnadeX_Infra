@@ -16,9 +16,12 @@ As operações abaixo citam o nome no hPanel e, entre parênteses, a ferramenta 
 2. **Segredos ficam só no hPanel** (Docker Manager → `enadex` → variáveis de ambiente). Nunca em repositório, issue,
    chat, log ou chamada de API.
 3. **"Criar projeto" só no primeiro deploy.** `VPS_createNewProjectV1` substitui o projeto inteiro, compose e `.env`
-   com os segredos. Depois do primeiro deploy, só Atualizar, Reiniciar, Parar e Iniciar.
+   com os segredos. Testado em 05/11/2026: sem o parâmetro `environment`, o `.env` fica vazio. Depois do primeiro
+   deploy, use só Atualizar, Reiniciar, Parar e Iniciar. Mudança no compose se faz pelo editor do projeto no hPanel.
 4. **Restaurar snapshot ou backup da VPS também volta o `n8n` no tempo.** Só em último caso, combinado com o dono
    dele.
+5. **Não ler o conteúdo do projeto pela API.** `VPS_getProjectContentsV1` devolve o `.env` em texto puro, com os
+   segredos. Para ver o estado, use `VPS_getProjectContainersV1` e `VPS_getProjectLogsV1`.
 
 ## Operações do dia a dia
 
