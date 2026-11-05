@@ -173,6 +173,7 @@ públicos e são lidos sem credencial. Se um deles voltar a ser privado, o job c
 | 404 do Traefik em `enadex.org` | Borda fora do ar ou fora da rede `n8n_default` | `VPS_getProjectContainersV1`: a `edge` está `Up`? Os logs dela mostram as requisições? |
 | Certificado inválido (`TRAEFIK DEFAULT CERT`) | DNS ainda não propagado quando o Traefik pediu o certificado | Conferir os `nslookup` e Reiniciar o projeto: o Traefik relê os rótulos e pede de novo |
 | 502 ou 504 em `/api` | API reiniciando ou aquecendo | Aguardar `healthy`; ver os logs da `api` |
+| `api` com “Up poucos segundos” sem ninguém ter reiniciado | Falta de memória (OOM): picos de cálculo do EduCluster acima do limite do container | Ver a memória em `VPS_getProjectContainersV1`. O limite é 4,5 GiB e o normal é ~2 GiB. Enquanto a API volta, a borda serve o que já está em cache |
 | 503 em `/api/enade-time/*` | DSN do leitor errado ou Supabase pausado | Conferir `ENADE_TIME_DB_URL`; ver o painel do Supabase |
 | `{"erro": ...}` no MultiENADE ou 500 no EduCluster | Chave de serviço inválida ou revogada | Conferir `SUPABASE_KEY` no hPanel e Atualizar |
 | 429 para visitante legítimo | Limite por IP baixo para o uso real | Ajustar `limit_req` em `edge/nginx.conf`, publicar a borda e Atualizar |
