@@ -58,10 +58,14 @@ Passos:
    | Nome | Tipo | Valor | TTL |
    |---|---|---|---|
    | `@` | A | `187.127.29.195` (substitui o estacionamento `2.57.91.91`) | 300 |
-   | `@` | AAAA | `2a02:4780:6e:f18a::1` (o Traefik da VPS responde por IPv6; verificado em 04/11/2026) | 300 |
    | `api` | CNAME | `enadex.org` | 300 |
    | `www` | CNAME | `enadex.org` (já existe) | — |
    | `@` | CAA | `0 issue "letsencrypt.org"` | 3600 |
+
+   **Sem `AAAA`, de propósito.** O Docker desta VPS repassa as conexões IPv6 por um proxy interno, e a origem
+   chega ao Traefik como `172.18.0.1` (testado em 05/11/2026). Isso juntaria todos os visitantes IPv6 num único limite
+   de taxa da borda. Só IPv4 preserva o IP real, e clientes só IPv6 chegam pelo NAT64 da operadora. Para voltar o
+   IPv6, seria preciso ligar o IPv6 no Docker e na rede do Traefik, ou seja, mexer no projeto `n8n`.
 
    Espere a propagação **antes** do passo 2, para o Let's Encrypt validar na primeira tentativa:
    `nslookup enadex.org 1.1.1.1`, `nslookup enadex.org 8.8.8.8` e `nslookup api.enadex.org 1.1.1.1` devem responder
