@@ -1,0 +1,18 @@
+# Contexto de build = raiz do EnadeX_Infra, com backend/ ou frontend/ baixados pelo CI.
+# Nada de segredo, histórico git ou artefato local entra nas imagens.
+**/.git
+**/.github
+**/.env
+**/.env.*
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/node_modules
+**/.next
+**/*.log
+backend/enade_time/frontend
+deploy
+README.md
+RUNBOOK.md

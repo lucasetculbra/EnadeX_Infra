@@ -1,0 +1,15 @@
+# Teste no PC (Docker Desktop), sem o Traefik da VPS: a borda fica em http://localhost:8080.
+#
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.local.yml --env-file deploy/.env up
+#
+# deploy/.env é uma cópia local do .env.example com os segredos preenchidos (ignorado pelo git). Para o navegador
+# chamar a API local, gere a imagem do frontend com --build-arg SITE_URL=http://localhost:8080 (ver README).
+services:
+  edge:
+    ports:
+      - "8080:8080"
+
+networks:
+  proxy:
+    external: false
+    name: enadex_local_proxy

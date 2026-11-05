@@ -1,0 +1,14 @@
+# Segredos: só no hPanel (produção) ou num deploy/.env local, que nunca é versionado.
+.env
+.env.*
+!.env.example
+
+# Checkouts usados no build local (o CI baixa os dois sozinho).
+/backend/
+/frontend/
+
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

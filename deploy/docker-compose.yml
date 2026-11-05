@@ -1,0 +1,131 @@
+# EnadeX na VPS da Hostinger (projeto "enadex" no Docker Manager), separado do projeto "n8n".
+#
+# O Traefik do projeto n8n já ocupa as portas 80/443 e emite os certificados (certresolver mytlschallenge).
+# Este projeto só se liga à rede dele (n8n_default) pela borda e ganha rotas por rótulos: nada no n8n muda.
+#
+# Variáveis: vêm do .env do projeto no Docker Manager. Os segredos são preenchidos pelo Lucas no hPanel;
+# nunca neste arquivo. Lista de nomes em deploy/.env.example.
+
+x-log: &log
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  edge:
+    image: ghcr.io/enadex/enadex-edge:${EDGE_TAG:-main}
+    restart: unless-stopped
+    depends_on:
+      - api
+      - web
+    networks:
+      - enadex
+      - proxy
+    tmpfs:
+      - /var/cache/nginx/api:size=256m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+    logging: *log
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=n8n_default
+      # enadex.org (site + /api) e api.enadex.org (API e Swagger) na mesma borda.
+      - traefik.http.routers.enadex.rule=Host(`enadex.org`) || Host(`api.enadex.org`)
+      - traefik.http.routers.enadex.entrypoints=websecure
+      - traefik.http.routers.enadex.tls=true
+      - traefik.http.routers.enadex.tls.certresolver=mytlschallenge
+      - traefik.http.routers.enadex.middlewares=enadex-compress@docker,enadex-headers@docker
+      - traefik.http.routers.enadex.service=enadex
+      # www.enadex.org -> enadex.org (301).
+      - traefik.http.routers.enadex-www.rule=Host(`www.enadex.org`)
+      - traefik.http.routers.enadex-www.entrypoints=websecure
+      - traefik.http.routers.enadex-www.tls=true
+      - traefik.http.routers.enadex-www.tls.certresolver=mytlschallenge
+      - traefik.http.routers.enadex-www.middlewares=enadex-www@docker
+      - traefik.http.routers.enadex-www.service=enadex
+      - traefik.http.middlewares.enadex-www.redirectregex.regex=^https?://www\.enadex\.org/(.*)
+      - traefik.http.middlewares.enadex-www.redirectregex.replacement=https://enadex.org/$${1}
+      - traefik.http.middlewares.enadex-www.redirectregex.permanent=true
+      # Compressão (brotli/gzip) e cabeçalhos de segurança.
+      - traefik.http.middlewares.enadex-compress.compress=true
+      - traefik.http.middlewares.enadex-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.enadex-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.enadex-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.enadex-headers.headers.frameDeny=true
+      - traefik.http.middlewares.enadex-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+      - traefik.http.services.enadex.loadbalancer.server.port=8080
+
+  api:
+    image: ghcr.io/enadex/enadex-api:${API_TAG:-main}
+    restart: unless-stopped
+    init: true
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      ENADE_TIME_DB_URL: ${ENADE_TIME_DB_URL}
+      EXPLAINENADE_REFRESH_TOKEN: ${EXPLAINENADE_REFRESH_TOKEN}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      EDUCLUSTER_ORIGEM: supabase
+      POOL_MAXCONN: "10"
+      WARMUP: "1"
+    volumes:
+      # Descrições por IA do EduCluster (Gemini, um JSON por contexto): sobrevivem a reinícios e deploys, então cada
+      # texto é pago uma vez só. As bases de dados ficam só em memória e são recarregadas do Supabase a cada partida
+      # (o aquecimento faz isso antes do primeiro visitante); reiniciar o projeto = dados atualizados.
+      - educluster_cache:/app/educluster/.cache
+    tmpfs:
+      - /app/e_xplainenade/local/outputs:size=200m,mode=1777
+      - /tmp:size=512m,mode=1777
+    networks:
+      - enadex
+    # Em falta de memória na VPS, o kernel encerra a API antes do n8n do cliente.
+    oom_score_adj: 500
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 240s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 3G
+    logging: *log
+
+  web:
+    image: ghcr.io/enadex/enadex-web:${WEB_TAG:-main}
+    restart: unless-stopped
+    networks:
+      - enadex
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+    logging: *log
+
+networks:
+  enadex:
+    name: enadex_interna
+  proxy:
+    external: true
+    name: n8n_default
+
+volumes:
+  educluster_cache:
