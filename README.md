@@ -4,6 +4,9 @@ Infraestrutura de produção do EnadeX em **https://enadex.org**: as imagens Doc
 compose da VPS e o CI que publica tudo no GHCR. Este repositório não guarda segredo nenhum; a operação está no
 [RUNBOOK](RUNBOOK.md).
 
+O repositório e as imagens ficam na conta `lucasetculbra`. Se o repositório for transferido para a organização
+EnadeX, o CI passa a publicar em `ghcr.io/enadex` sozinho. Na VPS, basta trocar a variável `REGISTRO`.
+
 ## Como fica no ar
 
 ```
@@ -38,9 +41,9 @@ api ──▶ Supabase do grupo (us-east-2): PostgREST com a chave de serviço; 
 
 | Imagem | Fonte | Tags |
 |---|---|---|
-| `ghcr.io/enadex/enadex-api` | `EnadeX/EnadeX_Backend` (`main`) | `main` e o sha de 12 caracteres do backend |
-| `ghcr.io/enadex/enadex-web` | `Cintriano/EnadeX_Frontend` (`master`; privado, lido com a chave de deploy `FRONTEND_DEPLOY_KEY`, só leitura, ou com o token `FRONTEND_REPO_TOKEN`) | `main` e o sha do frontend |
-| `ghcr.io/enadex/enadex-edge` | este repositório (`edge/`) | `main` e o sha deste repositório |
+| `ghcr.io/lucasetculbra/enadex-api` | `EnadeX/EnadeX_Backend` (`main`) | `main` e o sha de 12 caracteres do backend |
+| `ghcr.io/lucasetculbra/enadex-web` | `Cintriano/EnadeX_Frontend` (`master`; privado, lido com a chave de deploy `FRONTEND_DEPLOY_KEY`, só leitura, ou com o token `FRONTEND_REPO_TOKEN`) | `main` e o sha do frontend |
+| `ghcr.io/lucasetculbra/enadex-edge` | este repositório (`edge/`) | `main` e o sha deste repositório |
 
 O CI roda em push na `main` deste repositório, manualmente (Actions → *Imagens do EnadeX* → *Run workflow*, com
 branch, tag ou commit de cada fonte) e por `repository_dispatch` (`backend-atualizado`, `frontend-atualizado`). Cada
@@ -81,9 +84,9 @@ Publicar uma imagem não muda o site. A VPS só troca de versão quando o projet
 Com o Docker Desktop, o backend clonado em `./backend` e o frontend em `./frontend` (os dois são ignorados pelo git):
 
 ```sh
-docker build -f api/Dockerfile  -t ghcr.io/enadex/enadex-api:main  .
-docker build -f web/Dockerfile  -t ghcr.io/enadex/enadex-web:main  --build-arg SITE_URL=http://localhost:8080 .
-docker build -f edge/Dockerfile -t ghcr.io/enadex/enadex-edge:main .
+docker build -f api/Dockerfile  -t ghcr.io/lucasetculbra/enadex-api:main  .
+docker build -f web/Dockerfile  -t ghcr.io/lucasetculbra/enadex-web:main  --build-arg SITE_URL=http://localhost:8080 .
+docker build -f edge/Dockerfile -t ghcr.io/lucasetculbra/enadex-edge:main .
 cp deploy/.env.example deploy/.env    # preencher os segredos; o arquivo nunca é versionado
 docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.local.yml --env-file deploy/.env up
 ```

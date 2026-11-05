@@ -1,7 +1,7 @@
 # Faz a tag :main de uma imagem apontar para uma versão já publicada (rollback ou fixar versão), sem rebuild.
 # A VPS sempre roda :main; depois deste workflow, "Atualizar" no Docker Manager (ou VPS_updateProjectV1) aplica a
-# mudança sem tocar no .env do projeto. As versões disponíveis são as tags de 12 caracteres em
-# https://github.com/orgs/EnadeX/packages.
+# mudança sem tocar no .env do projeto. As versões disponíveis são as tags de 12 caracteres na aba Packages do dono
+# deste repositório.
 name: Promover versão
 
 on:
@@ -43,9 +43,10 @@ jobs:
 
       - name: Reapontar :main
         env:
-          IMAGEM: ghcr.io/enadex/${{ inputs.imagem }}
+          NOME: ${{ inputs.imagem }}
           TAG: ${{ inputs.tag }}
         run: |
+          IMAGEM="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/$NOME"
           docker buildx imagetools inspect "$IMAGEM:$TAG" > /dev/null
           echo "Antes:"; docker buildx imagetools inspect "$IMAGEM:main" | head -n 3
           docker buildx imagetools create --tag "$IMAGEM:main" "$IMAGEM:$TAG"

@@ -14,7 +14,7 @@ x-log: &log
 
 services:
   edge:
-    image: ghcr.io/enadex/enadex-edge:${EDGE_TAG:-main}
+    image: ${REGISTRO:-ghcr.io/lucasetculbra}/enadex-edge:${EDGE_TAG:-main}
     restart: unless-stopped
     depends_on:
       - api
@@ -65,7 +65,7 @@ services:
       - traefik.http.services.enadex.loadbalancer.server.port=8080
 
   api:
-    image: ghcr.io/enadex/enadex-api:${API_TAG:-main}
+    image: ${REGISTRO:-ghcr.io/lucasetculbra}/enadex-api:${API_TAG:-main}
     restart: unless-stopped
     init: true
     environment:
@@ -103,7 +103,7 @@ services:
     logging: *log
 
   web:
-    image: ghcr.io/enadex/enadex-web:${WEB_TAG:-main}
+    image: ${REGISTRO:-ghcr.io/lucasetculbra}/enadex-web:${WEB_TAG:-main}
     restart: unless-stopped
     networks:
       - enadex

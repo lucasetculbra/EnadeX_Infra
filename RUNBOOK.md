@@ -34,7 +34,7 @@ As operações abaixo citam o nome no hPanel e, entre parênteses, a ferramenta 
 - **Atualizar** baixa as imagens `:main` e recria os containers que mudaram, inclusive por `.env` novo.
 - **Reiniciar** para e sobe os mesmos containers, sem baixar imagem nem aplicar `.env`.
 
-As versões publicadas ficam em https://github.com/orgs/EnadeX/packages; a tag é o sha de 12 caracteres da fonte. Para
+As versões publicadas ficam na aba Packages de https://github.com/lucasetculbra; a tag é o sha de 12 caracteres da fonte. Para
 fixar uma versão sem o *Promover*, defina `API_TAG`, `WEB_TAG` ou `EDGE_TAG` no hPanel e Atualize.
 
 ## Primeiro deploy
